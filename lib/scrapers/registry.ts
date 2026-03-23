@@ -1,4 +1,9 @@
 import { BaseScraper } from "./base-scraper";
+import { AppleTopChartsScraper } from "./market/apple-top-charts";
+import { AppleAppDetailScraper } from "./market/apple-app-detail";
+import { GooglePlayDetailScraper } from "./market/google-play-detail";
+import { GooglePlayTopChartsScraper } from "./market/google-play-top-charts";
+import { MetaAdLibraryScraper } from "./ads/meta-ad-library";
 
 const scraperRegistry = new Map<string, BaseScraper<unknown>>();
 
@@ -17,3 +22,10 @@ export function getAllScrapers(): BaseScraper<unknown>[] {
 export function getScraperNames(): string[] {
   return Array.from(scraperRegistry.keys());
 }
+
+// Register all scrapers
+registerScraper(new AppleTopChartsScraper() as BaseScraper<unknown>);
+registerScraper(new AppleAppDetailScraper() as BaseScraper<unknown>);
+registerScraper(new GooglePlayDetailScraper() as BaseScraper<unknown>);
+registerScraper(new GooglePlayTopChartsScraper() as BaseScraper<unknown>);
+registerScraper(new MetaAdLibraryScraper() as BaseScraper<unknown>);
