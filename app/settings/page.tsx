@@ -52,6 +52,19 @@ interface CleanupResult {
   deletedRuns: number;
 }
 
+interface ScheduleInfo {
+  category: string;
+  intervalHours: number;
+  intervalLabel: string;
+  scrapers: string[];
+  nextRun: string | null;
+}
+
+interface SchedulerState {
+  enabled: boolean;
+  schedules: ScheduleInfo[];
+}
+
 export default function SettingsPage() {
   const [runs, setRuns] = useState<ScraperRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +76,11 @@ export default function SettingsPage() {
   const [dbLoading, setDbLoading] = useState(true);
   const [cleanupRunning, setCleanupRunning] = useState(false);
   const [cleanupResult, setCleanupResult] = useState<CleanupResult | null>(null);
+  const [scheduler, setScheduler] = useState<SchedulerState>({
+    enabled: false,
+    schedules: [],
+  });
+  const [schedulerToggling, setSchedulerToggling] = useState(false);
 
   const fetchStatus = useCallback(() => {
     fetch("/api/scraper/status")
@@ -70,6 +88,13 @@ export default function SettingsPage() {
       .then((json) => setRuns(Array.isArray(json) ? json : []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  const fetchScheduler = useCallback(() => {
+    fetch("/api/scheduler")
+      .then((res) => res.json())
+      .then((json) => setScheduler(json))
+      .catch(() => {});
   }, []);
 
   const fetchDbStats = useCallback(() => {
@@ -84,7 +109,25 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchStatus();
     fetchDbStats();
-  }, [fetchStatus, fetchDbStats]);
+    fetchScheduler();
+  }, [fetchStatus, fetchDbStats, fetchScheduler]);
+
+  async function handleToggleScheduler() {
+    setSchedulerToggling(true);
+    try {
+      const res = await fetch("/api/scheduler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !scheduler.enabled }),
+      });
+      const json = await res.json();
+      setScheduler(json);
+    } catch {
+      // ignore
+    } finally {
+      setSchedulerToggling(false);
+    }
+  }
 
   async function handleRunScraper(name: string) {
     setRunningScrapers((prev) => new Set(prev).add(name));
@@ -139,6 +182,80 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 p-6">
       <h2 className="font-heading text-xl font-semibold">Settings</h2>
+
+      {/* Auto Refresh */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Auto Refresh</CardTitle>
+            <button
+              type="button"
+              onClick={handleToggleScheduler}
+              disabled={schedulerToggling}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                scheduler.enabled ? "bg-primary" : "bg-muted-foreground/30"
+              } ${schedulerToggling ? "opacity-50" : ""}`}
+              role="switch"
+              aria-checked={scheduler.enabled}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  scheduler.enabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {scheduler.enabled ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Scrapers are running automatically on the schedules below.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="pb-2 pr-4 font-medium">Category</th>
+                      <th className="pb-2 pr-4 font-medium">Interval</th>
+                      <th className="pb-2 pr-4 font-medium">Scrapers</th>
+                      <th className="pb-2 font-medium">Next Run (est.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scheduler.schedules.map((s) => (
+                      <tr
+                        key={s.category}
+                        className="border-b border-border/50"
+                      >
+                        <td className="py-2 pr-4 font-medium">
+                          {s.category}
+                        </td>
+                        <td className="py-2 pr-4 text-muted-foreground">
+                          {s.intervalLabel}
+                        </td>
+                        <td className="py-2 pr-4 text-muted-foreground font-mono text-xs">
+                          {s.scrapers.join(", ")}
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {s.nextRun
+                            ? new Date(s.nextRun).toLocaleString()
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Auto refresh is disabled. Toggle the switch above to enable
+              automatic periodic scraping.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Scrapers */}
       <Card>

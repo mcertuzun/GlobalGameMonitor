@@ -189,6 +189,13 @@ export const trendsData = sqliteTable(
   ]
 );
 
+// ── settings ──────────────────────────────────────────────────────────
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").default(sql`(CURRENT_TIMESTAMP)`),
+});
+
 // ── scraper_runs ────────────────────────────────────────────────────────
 export const scraperRuns = sqliteTable(
   "scraper_runs",

@@ -24,3 +24,6 @@ try {
 } catch (e) {
   // Migrations already applied or migration folder issue — safe to ignore
 }
+
+// Auto-start scheduler if previously enabled (check persisted state)
+import("@/lib/scheduler").then((mod) => mod.initScheduler()).catch(() => {});
