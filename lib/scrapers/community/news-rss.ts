@@ -123,10 +123,9 @@ export class NewsRssScraper extends BaseScraper<NewsSignal> {
         continue;
       }
 
-      // News items are not tied to a specific app, use appId 0 as a sentinel
-      // In practice, you might want to match keywords against app names
+      // News items are not tied to a specific app
       await db.insert(communitySignals).values({
-        appId: 0,
+        appId: null,
         source: signal.source,
         title: signal.title,
         url: signal.url,
