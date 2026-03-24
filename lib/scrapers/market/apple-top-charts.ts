@@ -1,6 +1,7 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, topCharts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { SCRAPER_LIMITS } from "@/lib/config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ export function parseAppleRssResponse(
 
 const COUNTRIES = ["us"];
 const CHART_TYPES = ["top-free", "top-paid"];
-const LIMIT = 100;
+const LIMIT = SCRAPER_LIMITS.topChartsPerChart;
 
 export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
   config: ScraperConfig = {

@@ -1,6 +1,7 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, topCharts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { SCRAPER_LIMITS } from "@/lib/config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ export class GooglePlayTopChartsScraper extends BaseScraper<GooglePlayChartEntry
         const results = await gplay.list({
           collection: gplay.collection[collection.id],
           category: gplay.category.GAME,
-          num: 100,
+          num: SCRAPER_LIMITS.topChartsPerChart,
           country: "us",
         });
 

@@ -1,6 +1,8 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, marketSnapshots } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { snapshotExistsForToday } from "@/lib/db/dedup";
+import { SCRAPER_LIMITS } from "@/lib/config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -125,7 +127,11 @@ export class GooglePlayDetailScraper extends BaseScraper<GooglePlayAppDetail> {
         })
         .where(eq(apps.id, appId));
 
-      // Insert market snapshot
+      // Insert market snapshot (skip if duplicate exists for today)
+      if (SCRAPER_LIMITS.skipDuplicateSnapshots && await snapshotExistsForToday(appId, "google-play-scraper")) {
+        continue;
+      }
+
       await db.insert(marketSnapshots).values({
         appId,
         source: "google-play-scraper",
