@@ -4,6 +4,9 @@ import { AppleAppDetailScraper } from "./market/apple-app-detail";
 import { GooglePlayDetailScraper } from "./market/google-play-detail";
 import { GooglePlayTopChartsScraper } from "./market/google-play-top-charts";
 import { MetaAdLibraryScraper } from "./ads/meta-ad-library";
+import { GoogleAdsTransparencyScraper } from "./ads/google-ads-transparency";
+import { TikTokCreativeScraper } from "./ads/tiktok-creative";
+import { AppBrainSdkScraper } from "./ads/appbrain-sdk";
 import { SteamSpyScraper } from "./market/steamspy";
 import { SteamApiScraper } from "./market/steam-api";
 
@@ -31,5 +34,8 @@ registerScraper(new AppleAppDetailScraper() as BaseScraper<unknown>);
 registerScraper(new GooglePlayDetailScraper() as BaseScraper<unknown>);
 registerScraper(new GooglePlayTopChartsScraper() as BaseScraper<unknown>);
 registerScraper(new MetaAdLibraryScraper() as BaseScraper<unknown>);
+registerScraper(new GoogleAdsTransparencyScraper() as BaseScraper<unknown>);
+registerScraper(new TikTokCreativeScraper() as BaseScraper<unknown>);
+registerScraper(new AppBrainSdkScraper() as BaseScraper<unknown>);
 registerScraper(new SteamSpyScraper() as BaseScraper<unknown>);
 registerScraper(new SteamApiScraper() as BaseScraper<unknown>);

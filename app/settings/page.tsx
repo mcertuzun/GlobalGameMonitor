@@ -11,6 +11,9 @@ const SCRAPERS = [
   { name: "google-play-detail", label: "Google Play Detail" },
   { name: "google-play-top-charts", label: "Google Play Top Charts" },
   { name: "meta-ad-library", label: "Meta Ad Library" },
+  { name: "google-ads-transparency", label: "Google Ads Transparency" },
+  { name: "tiktok-creative", label: "TikTok Creative Center" },
+  { name: "appbrain-sdk", label: "AppBrain SDK Intelligence" },
   { name: "steamspy", label: "SteamSpy" },
   { name: "steam-api", label: "Steam Store API" },
 ];
