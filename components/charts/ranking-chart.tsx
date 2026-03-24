@@ -32,8 +32,8 @@ export function RankingChart({ data, dataKey, label }: RankingChartProps) {
   }
 
   return (
-    <div style={{ width: "100%", height: 200 }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ width: "100%", minHeight: 200 }}>
+      <ResponsiveContainer width="100%" height={200} minWidth={0}>
         <LineChart data={filtered}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 12 }} />
