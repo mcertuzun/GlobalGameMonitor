@@ -16,6 +16,10 @@ const SCRAPERS = [
   { name: "appbrain-sdk", label: "AppBrain SDK Intelligence" },
   { name: "steamspy", label: "SteamSpy" },
   { name: "steam-api", label: "Steam Store API" },
+  { name: "reddit", label: "Reddit RSS" },
+  { name: "twitch-tracker", label: "Twitch Tracker" },
+  { name: "google-trends", label: "Google Trends" },
+  { name: "news-rss", label: "News RSS" },
 ];
 
 interface ScraperRun {

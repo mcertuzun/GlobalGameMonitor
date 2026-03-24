@@ -9,6 +9,10 @@ import { TikTokCreativeScraper } from "./ads/tiktok-creative";
 import { AppBrainSdkScraper } from "./ads/appbrain-sdk";
 import { SteamSpyScraper } from "./market/steamspy";
 import { SteamApiScraper } from "./market/steam-api";
+import { RedditScraper } from "./community/reddit";
+import { TwitchTrackerScraper } from "./community/twitch-tracker";
+import { GoogleTrendsScraper } from "./competitor/google-trends";
+import { NewsRssScraper } from "./community/news-rss";
 
 const scraperRegistry = new Map<string, BaseScraper<unknown>>();
 
@@ -39,3 +43,7 @@ registerScraper(new TikTokCreativeScraper() as BaseScraper<unknown>);
 registerScraper(new AppBrainSdkScraper() as BaseScraper<unknown>);
 registerScraper(new SteamSpyScraper() as BaseScraper<unknown>);
 registerScraper(new SteamApiScraper() as BaseScraper<unknown>);
+registerScraper(new RedditScraper() as BaseScraper<unknown>);
+registerScraper(new TwitchTrackerScraper() as BaseScraper<unknown>);
+registerScraper(new GoogleTrendsScraper() as BaseScraper<unknown>);
+registerScraper(new NewsRssScraper() as BaseScraper<unknown>);

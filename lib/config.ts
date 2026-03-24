@@ -4,4 +4,6 @@ export const SCRAPER_LIMITS = {
   retentionDays: 30, // Keep data for 30 days
   maxSnapshotsPerApp: 30, // Max snapshots per app
   skipDuplicateSnapshots: true, // Don't insert if snapshot exists for today
+  maxRedditApps: 10, // Max apps to fetch Reddit data for (own games + first N others)
+  maxNewsItemsPerFeed: 20, // Max news items to fetch per RSS feed
 };
