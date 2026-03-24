@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { db } from "@/lib/db/client";
 import { communitySignals, apps } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       appName: apps.name,
     })
     .from(communitySignals)
-    .innerJoin(apps, eq(communitySignals.appId, apps.id))
+    .leftJoin(apps, eq(communitySignals.appId, apps.id))
     .where(whereClause)
     .orderBy(desc(communitySignals.date))
     .limit(limit);

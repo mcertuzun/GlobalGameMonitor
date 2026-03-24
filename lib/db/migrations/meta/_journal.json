@@ -15,6 +15,20 @@
       "when": 1774391674721,
       "tag": "0001_sleepy_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774394183747,
+      "tag": "0002_ambiguous_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774394389815,
+      "tag": "0003_youthful_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

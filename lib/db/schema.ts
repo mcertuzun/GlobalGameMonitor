@@ -154,9 +154,7 @@ export const communitySignals = sqliteTable(
   "community_signals",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    appId: integer("app_id")
-      .notNull()
-      .references(() => apps.id),
+    appId: integer("app_id").references(() => apps.id),
     source: text("source").notNull(), // "reddit" | "twitter" | "discord" etc.
     title: text("title"),
     url: text("url"),
@@ -186,6 +184,55 @@ export const trendsData = sqliteTable(
   },
   (table) => [
     index("trends_data_app_date_idx").on(table.appId, table.date),
+  ]
+);
+
+// ── game_metadata ─────────────────────────────────────────────────────
+export const gameMetadata = sqliteTable(
+  "game_metadata",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    source: text("source").notNull(), // "rawg" | "igdb" | "itchio"
+    sourceId: text("source_id").notNull(), // ID in the source system
+    name: text("name").notNull(),
+    genres: text("genres"), // comma-separated
+    tags: text("tags"), // comma-separated
+    platforms: text("platforms"), // comma-separated
+    rating: real("rating"),
+    ratingCount: integer("rating_count"),
+    releaseDate: text("release_date"),
+    developer: text("developer"),
+    publisher: text("publisher"),
+    description: text("description"),
+    imageUrl: text("image_url"),
+    metacriticScore: integer("metacritic_score"),
+    playtime: integer("playtime"), // average in minutes
+    rawJson: text("raw_json"),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    uniqueIndex("idx_game_metadata_source_id").on(table.source, table.sourceId),
+    index("idx_game_metadata_name").on(table.name),
+  ]
+);
+
+// ── trend_signals ─────────────────────────────────────────────────────
+export const trendSignals = sqliteTable(
+  "trend_signals",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    source: text("source").notNull(), // "trending-now" | "itchio-jams" | "youtube"
+    signalType: text("signal_type").notNull(), // "trending" | "jam_theme" | "video_count"
+    name: text("name").notNull(), // game name, jam theme, or search term
+    value: real("value"), // numeric signal value
+    metadata: text("metadata"), // JSON string for extra data
+    date: text("date").notNull(),
+    createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (table) => [
+    index("idx_trend_signals_source_date").on(table.source, table.date),
+    index("idx_trend_signals_name").on(table.name),
   ]
 );
 

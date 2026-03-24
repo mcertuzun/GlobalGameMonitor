@@ -20,6 +20,9 @@ const SCRAPERS = [
   { name: "twitch-tracker", label: "Twitch Tracker" },
   { name: "google-trends", label: "Google Trends" },
   { name: "news-rss", label: "News RSS" },
+  { name: "rawg", label: "RAWG Game Database" },
+  { name: "itchio-jams", label: "itch.io Game Jams" },
+  { name: "trending-now", label: "TrendingNow.games" },
 ];
 
 interface ScraperRun {
