@@ -6,4 +6,8 @@ export const SCRAPER_LIMITS = {
   skipDuplicateSnapshots: true, // Don't insert if snapshot exists for today
   maxRedditApps: 10, // Max apps to fetch Reddit data for (own games + first N others)
   maxNewsItemsPerFeed: 20, // Max news items to fetch per RSS feed
+  youtube: {
+    maxAppsToSearch: 10,
+    maxResultsPerSearch: 5,
+  },
 };

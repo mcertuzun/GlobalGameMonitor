@@ -16,6 +16,7 @@ import { NewsRssScraper } from "./community/news-rss";
 import { RawgScraper } from "./competitor/rawg";
 import { ItchioJamsScraper } from "./community/itchio-jams";
 import { TrendingNowScraper } from "./competitor/trending-now";
+import { YouTubeScraper } from "./community/youtube";
 
 const scraperRegistry = new Map<string, BaseScraper<unknown>>();
 
@@ -53,3 +54,4 @@ registerScraper(new NewsRssScraper() as BaseScraper<unknown>);
 registerScraper(new RawgScraper() as BaseScraper<unknown>);
 registerScraper(new ItchioJamsScraper() as BaseScraper<unknown>);
 registerScraper(new TrendingNowScraper() as BaseScraper<unknown>);
+registerScraper(new YouTubeScraper() as BaseScraper<unknown>);

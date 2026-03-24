@@ -23,6 +23,7 @@ const SCRAPERS = [
   { name: "rawg", label: "RAWG Game Database" },
   { name: "itchio-jams", label: "itch.io Game Jams" },
   { name: "trending-now", label: "TrendingNow.games" },
+  { name: "youtube", label: "YouTube Data API" },
 ];
 
 interface ScraperRun {
