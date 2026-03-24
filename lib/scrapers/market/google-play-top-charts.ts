@@ -35,7 +35,8 @@ export class GooglePlayTopChartsScraper extends BaseScraper<GooglePlayChartEntry
   };
 
   async fetch(): Promise<ScraperResult<GooglePlayChartEntry>> {
-    const gplay = require("google-play-scraper");
+    const gplayModule = require("google-play-scraper");
+    const gplay = gplayModule.default || gplayModule;
     const allEntries: GooglePlayChartEntry[] = [];
     const errors: string[] = [];
 

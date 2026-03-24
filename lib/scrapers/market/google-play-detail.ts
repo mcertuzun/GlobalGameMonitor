@@ -61,7 +61,8 @@ export class GooglePlayDetailScraper extends BaseScraper<GooglePlayAppDetail> {
 
   async fetch(): Promise<ScraperResult<GooglePlayAppDetail>> {
     const { db } = await import("@/lib/db/client");
-    const gplay = require("google-play-scraper");
+    const gplayModule = require("google-play-scraper");
+    const gplay = gplayModule.default || gplayModule;
     const allDetails: GooglePlayAppDetail[] = [];
     const errors: string[] = [];
 
