@@ -4,6 +4,7 @@ import {
   marketSnapshots,
   topCharts,
   adCreatives,
+  communitySignals,
   scraperRuns,
 } from "@/lib/db/schema";
 import { eq, desc, count } from "drizzle-orm";
@@ -56,6 +57,26 @@ export async function GET() {
     .orderBy(desc(adCreatives.createdAt))
     .limit(5);
 
+  // Community signals count
+  const [communityCountResult] = await db
+    .select({ value: count() })
+    .from(communitySignals);
+  const communitySignalCount = communityCountResult.value;
+
+  // Latest 5 community signals
+  const latestCommunitySignals = await db
+    .select({
+      id: communitySignals.id,
+      source: communitySignals.source,
+      title: communitySignals.title,
+      date: communitySignals.date,
+      appName: apps.name,
+    })
+    .from(communitySignals)
+    .innerJoin(apps, eq(communitySignals.appId, apps.id))
+    .orderBy(desc(communitySignals.date))
+    .limit(5);
+
   // Scraper status (latest 20 runs)
   const scraperStatus = await db
     .select()
@@ -69,6 +90,8 @@ export async function GET() {
     latestSnapshots,
     latestCharts,
     latestAds,
+    communitySignalCount,
+    latestCommunitySignals,
     scraperStatus,
   });
 }

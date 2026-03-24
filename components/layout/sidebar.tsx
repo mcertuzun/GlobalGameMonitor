@@ -9,6 +9,7 @@ const navItems = [
   { href: "/apps", label: "Games", icon: "🎮" },
   { href: "/charts", label: "Top Charts", icon: "📈" },
   { href: "/ads", label: "Ads", icon: "📺" },
+  { href: "/community", label: "Community", icon: "💬" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 

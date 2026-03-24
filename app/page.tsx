@@ -20,6 +20,14 @@ interface DashboardSummary {
   ownApps: number;
   latestSnapshots: Snapshot[];
   latestAds: { id: number }[];
+  communitySignalCount: number;
+  latestCommunitySignals: {
+    id: number;
+    source: string;
+    title: string | null;
+    date: string;
+    appName: string;
+  }[];
   scraperStatus: {
     id: number;
     scraperName: string;
@@ -64,7 +72,7 @@ export default function DashboardPage() {
       <h2 className="font-heading text-xl font-semibold">Dashboard</h2>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Total Games</CardTitle>
@@ -87,6 +95,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{data.latestAds.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Community Signals</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{data.communitySignalCount}</p>
           </CardContent>
         </Card>
       </div>
