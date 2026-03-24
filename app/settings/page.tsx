@@ -11,6 +11,8 @@ const SCRAPERS = [
   { name: "google-play-detail", label: "Google Play Detail" },
   { name: "google-play-top-charts", label: "Google Play Top Charts" },
   { name: "meta-ad-library", label: "Meta Ad Library" },
+  { name: "steamspy", label: "SteamSpy" },
+  { name: "steam-api", label: "Steam Store API" },
 ];
 
 interface ScraperRun {

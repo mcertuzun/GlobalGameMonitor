@@ -4,6 +4,8 @@ import { AppleAppDetailScraper } from "./market/apple-app-detail";
 import { GooglePlayDetailScraper } from "./market/google-play-detail";
 import { GooglePlayTopChartsScraper } from "./market/google-play-top-charts";
 import { MetaAdLibraryScraper } from "./ads/meta-ad-library";
+import { SteamSpyScraper } from "./market/steamspy";
+import { SteamApiScraper } from "./market/steam-api";
 
 const scraperRegistry = new Map<string, BaseScraper<unknown>>();
 
@@ -29,3 +31,5 @@ registerScraper(new AppleAppDetailScraper() as BaseScraper<unknown>);
 registerScraper(new GooglePlayDetailScraper() as BaseScraper<unknown>);
 registerScraper(new GooglePlayTopChartsScraper() as BaseScraper<unknown>);
 registerScraper(new MetaAdLibraryScraper() as BaseScraper<unknown>);
+registerScraper(new SteamSpyScraper() as BaseScraper<unknown>);
+registerScraper(new SteamApiScraper() as BaseScraper<unknown>);
