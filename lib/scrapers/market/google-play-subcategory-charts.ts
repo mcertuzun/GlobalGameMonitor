@@ -1,12 +1,11 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, topCharts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { SCRAPER_LIMITS } from "@/lib/config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export interface AppleChartEntry {
-  store: "appstore";
+export interface GooglePlaySubcategoryChartEntry {
+  store: "playstore";
   country: string;
   category: string;
   chartType: string;
@@ -18,88 +17,81 @@ export interface AppleChartEntry {
   genre: string;
 }
 
-interface AppleRssResult {
-  artistName: string;
-  id: string;
-  name: string;
-  artworkUrl100: string;
-  genres: { name: string }[];
-  url: string;
-}
+// ── Subcategories ─────────────────────────────────────────────────────
 
-interface AppleRssFeed {
-  feed: {
-    title?: string;
-    results: AppleRssResult[];
-  };
-}
+export const GAME_SUBCATEGORIES = [
+  "GAME_ACTION",
+  "GAME_ADVENTURE",
+  "GAME_ARCADE",
+  "GAME_CASUAL",
+  "GAME_PUZZLE",
+  "GAME_RACING",
+  "GAME_ROLE_PLAYING",
+  "GAME_SIMULATION",
+  "GAME_SPORTS",
+  "GAME_STRATEGY",
+  "GAME_WORD",
+];
 
-// ── Parser ─────────────────────────────────────────────────────────────
+// ── Parser ────────────────────────────────────────────────────────────
 
-export function parseAppleRssResponse(
-  data: AppleRssFeed,
-  country: string,
-  category: string,
-  chartType: string
-): AppleChartEntry[] {
-  const results = data.feed.results ?? [];
+export function parseSubcategoryResults(
+  results: Array<{
+    appId: string;
+    title: string;
+    developer: string;
+    icon: string;
+    genre: string;
+  }>,
+  subcategory: string
+): GooglePlaySubcategoryChartEntry[] {
   return results.map((item, index) => ({
-    store: "appstore" as const,
-    country,
-    category,
-    chartType,
+    store: "playstore" as const,
+    country: "US",
+    category: subcategory,
+    chartType: "free",
     rank: index + 1,
-    storeId: item.id,
-    name: item.name,
-    developer: item.artistName,
-    iconUrl: item.artworkUrl100,
-    genre: item.genres?.[0]?.name ?? "",
+    storeId: item.appId,
+    name: item.title,
+    developer: item.developer,
+    iconUrl: item.icon,
+    genre: item.genre ?? "",
   }));
 }
 
 // ── Scraper ────────────────────────────────────────────────────────────
 
-const COUNTRIES = ["us"];
-const CHART_TYPES = ["top-free", "top-paid", "top-grossing"];
-const LIMIT = SCRAPER_LIMITS.topChartsPerChart;
-
-export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
+export class GooglePlaySubcategoryChartsScraper extends BaseScraper<GooglePlaySubcategoryChartEntry> {
   config: ScraperConfig = {
-    name: "apple-top-charts",
+    name: "google-play-subcategory-charts",
     category: "market",
-    rateLimit: { requests: 5, perSeconds: 10 },
-    retryCount: 3,
-    timeout: 15000,
+    rateLimit: { requests: 1, perSeconds: 3 },
+    retryCount: 2,
+    timeout: 30000,
   };
 
-  async fetch(): Promise<ScraperResult<AppleChartEntry>> {
-    const allEntries: AppleChartEntry[] = [];
+  async fetch(): Promise<ScraperResult<GooglePlaySubcategoryChartEntry>> {
+    const gplayModule = require("google-play-scraper");
+    const gplay = gplayModule.default || gplayModule;
+    const allEntries: GooglePlaySubcategoryChartEntry[] = [];
     const errors: string[] = [];
 
-    for (const country of COUNTRIES) {
-      for (const chartType of CHART_TYPES) {
-        try {
-          await this.rateLimit();
+    for (const subcategory of GAME_SUBCATEGORIES) {
+      try {
+        await this.rateLimit();
 
-          const url = `https://rss.applemarketingtools.com/api/v2/${country}/apps/${chartType}/${LIMIT}/apps.json`;
-          const response = await fetch(url, {
-            signal: AbortSignal.timeout(this.config.timeout),
-          });
+        const results = await gplay.list({
+          collection: gplay.collection.TOP_FREE,
+          category: gplay.category[subcategory],
+          num: 20,
+          country: "us",
+        });
 
-          if (!response.ok) {
-            errors.push(`HTTP ${response.status} for ${country}/${chartType}`);
-            continue;
-          }
-
-          const data = await response.json();
-          // Map chart type from URL format to storage format
-          const normalizedChartType = chartType.replace("top-", "");
-          const entries = parseAppleRssResponse(data, country.toUpperCase(), "games", normalizedChartType);
-          allEntries.push(...entries);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          errors.push(`Error fetching ${country}/${chartType}: ${msg}`);
-        }
+        const entries = parseSubcategoryResults(results, subcategory);
+        allEntries.push(...entries);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`Error fetching subcategory ${subcategory}: ${msg}`);
       }
     }
 
@@ -111,7 +103,7 @@ export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
     };
   }
 
-  async store(records: AppleChartEntry[]): Promise<void> {
+  async store(records: GooglePlaySubcategoryChartEntry[]): Promise<void> {
     const { db } = await import("@/lib/db/client");
     const today = new Date().toISOString().split("T")[0];
 

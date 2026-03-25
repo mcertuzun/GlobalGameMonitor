@@ -59,6 +59,14 @@ const ITCHIO_FEEDS = [
     url: "https://itch.io/jams/past.xml",
     signalType: "jam_theme" as const,
   },
+  {
+    url: "https://itch.io/games/new-and-popular.xml",
+    signalType: "trending" as const,
+  },
+  {
+    url: "https://itch.io/games/top-rated.xml",
+    signalType: "trending" as const,
+  },
 ];
 
 // ── Scraper ────────────────────────────────────────────────────────────

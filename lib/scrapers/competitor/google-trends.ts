@@ -1,5 +1,5 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
-import { apps, trendsData } from "@/lib/db/schema";
+import { apps, trendsData, trendSignals } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -10,12 +10,27 @@ export interface TrendsTimelinePoint {
 }
 
 export interface TrendsRecord {
-  appId: number;
+  appId: number | null;
   keyword: string;
   region: string;
   interestScore: number;
   date: string;
 }
+
+// ── Genre Keywords ────────────────────────────────────────────────────
+
+export const GENRE_KEYWORDS = [
+  "idle game",
+  "merge game",
+  "tower defense game",
+  "roguelike game",
+  "cozy game",
+  "puzzle game",
+  "strategy game",
+  "simulation game",
+  "racing game",
+  "rpg game",
+];
 
 // ── Parser ─────────────────────────────────────────────────────────────
 
@@ -28,6 +43,50 @@ export function parseTrendsResult(
     region: "worldwide",
     interestScore: point.value[0] ?? 0,
     date: new Date(parseInt(point.time, 10) * 1000).toISOString(),
+  }));
+}
+
+export function parseMultiKeywordTrendsResult(
+  keywords: string[],
+  timelineData: TrendsTimelinePoint[]
+): Omit<TrendsRecord, "appId">[] {
+  const records: Omit<TrendsRecord, "appId">[] = [];
+  for (const point of timelineData) {
+    for (let i = 0; i < keywords.length; i++) {
+      records.push({
+        keyword: keywords[i],
+        region: "worldwide",
+        interestScore: point.value[i] ?? 0,
+        date: new Date(parseInt(point.time, 10) * 1000).toISOString(),
+      });
+    }
+  }
+  return records;
+}
+
+export interface RelatedQuery {
+  query: string;
+  value: number;
+}
+
+export function parseRelatedQueries(
+  responseData: {
+    default?: {
+      rankedList?: Array<{
+        rankedKeyword?: Array<{
+          query: string;
+          value: number;
+        }>;
+      }>;
+    };
+  }
+): RelatedQuery[] {
+  const lists = responseData?.default?.rankedList ?? [];
+  // Second list is "rising", first is "top"
+  const risingList = lists[1]?.rankedKeyword ?? lists[0]?.rankedKeyword ?? [];
+  return risingList.map((item) => ({
+    query: item.query,
+    value: item.value,
   }));
 }
 
@@ -49,7 +108,7 @@ export class GoogleTrendsScraper extends BaseScraper<TrendsRecord> {
     const allRecords: TrendsRecord[] = [];
     const errors: string[] = [];
 
-    // Get own games to track trends for
+    // ── Part A: Own game trends ─────────────────────────────────────
     const ownGames = await db
       .select()
       .from(apps)
@@ -84,6 +143,102 @@ export class GoogleTrendsScraper extends BaseScraper<TrendsRecord> {
       }
     }
 
+    // ── Part B: Genre keyword comparison ────────────────────────────
+    // Google Trends allows max 5 keywords per call, so we split into 2 batches
+    const batches = [
+      GENRE_KEYWORDS.slice(0, 5),
+      GENRE_KEYWORDS.slice(5, 10),
+    ];
+
+    const genreScores: Map<string, number> = new Map();
+
+    for (const batch of batches) {
+      try {
+        await this.rateLimit();
+
+        const response = await googleTrends.interestOverTime({
+          keyword: batch,
+          startTime,
+        });
+
+        const parsed = JSON.parse(response);
+        const timelineData: TrendsTimelinePoint[] =
+          parsed?.default?.timelineData ?? [];
+
+        const records = parseMultiKeywordTrendsResult(batch, timelineData);
+        for (const record of records) {
+          allRecords.push({
+            ...record,
+            appId: null,
+          });
+          // Track the latest score per keyword
+          const existing = genreScores.get(record.keyword) ?? 0;
+          if (record.interestScore > existing) {
+            genreScores.set(record.keyword, record.interestScore);
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`Error fetching genre trends batch: ${msg}`);
+      }
+    }
+
+    // ── Part C: Related queries for top 3 genre keywords ────────────
+    const sortedGenres = [...genreScores.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    for (const [keyword] of sortedGenres) {
+      try {
+        await this.rateLimit();
+
+        const response = await googleTrends.relatedQueries({
+          keyword,
+          startTime,
+        });
+
+        const parsed = JSON.parse(response);
+        const risingQueries = parseRelatedQueries(parsed);
+
+        // Store rising queries as trend signals
+        const { db: dbClient } = await import("@/lib/db/client");
+        const today = new Date().toISOString().split("T")[0];
+
+        for (const rq of risingQueries.slice(0, 10)) {
+          try {
+            // Dedup check
+            const existing = await dbClient
+              .select({ id: trendSignals.id })
+              .from(trendSignals)
+              .where(
+                and(
+                  eq(trendSignals.source, "google-trends"),
+                  eq(trendSignals.name, rq.query),
+                  eq(trendSignals.date, today)
+                )
+              )
+              .limit(1);
+
+            if (existing.length === 0) {
+              await dbClient.insert(trendSignals).values({
+                source: "google-trends",
+                signalType: "rising_query",
+                name: rq.query,
+                value: rq.value,
+                metadata: JSON.stringify({ parentKeyword: keyword }),
+                date: today,
+              });
+            }
+          } catch {
+            // Skip duplicate entries
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`Error fetching related queries for "${keyword}": ${msg}`);
+      }
+    }
+
     return {
       source: this.config.name,
       fetchedAt: new Date(),
@@ -96,22 +251,41 @@ export class GoogleTrendsScraper extends BaseScraper<TrendsRecord> {
     const { db } = await import("@/lib/db/client");
 
     for (const record of records) {
-      // Dedup: skip if same app+keyword+date exists
+      // Dedup: skip if same keyword+date exists (for genre, appId is null)
       const dateStr = record.date.split("T")[0];
-      const existing = await db
-        .select({ id: trendsData.id })
-        .from(trendsData)
-        .where(
-          and(
-            eq(trendsData.appId, record.appId),
-            eq(trendsData.keyword, record.keyword),
-            eq(trendsData.date, dateStr)
-          )
-        )
-        .limit(1);
 
-      if (existing.length > 0) {
-        continue;
+      if (record.appId != null) {
+        const existing = await db
+          .select({ id: trendsData.id })
+          .from(trendsData)
+          .where(
+            and(
+              eq(trendsData.appId, record.appId),
+              eq(trendsData.keyword, record.keyword),
+              eq(trendsData.date, dateStr)
+            )
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          continue;
+        }
+      } else {
+        // For genre trends (appId=null), dedup by keyword+date
+        const existing = await db
+          .select({ id: trendsData.id })
+          .from(trendsData)
+          .where(
+            and(
+              eq(trendsData.keyword, record.keyword),
+              eq(trendsData.date, dateStr)
+            )
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          continue;
+        }
       }
 
       await db.insert(trendsData).values({

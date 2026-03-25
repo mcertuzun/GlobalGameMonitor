@@ -17,6 +17,16 @@ export interface GooglePlayAppDetail {
   price: number;
   version: string;
   iconUrl: string;
+  // Enriched fields stored in rawJson
+  description: string;
+  histogram: Record<number, number>;
+  recentChanges: string;
+  adSupported: boolean;
+  offersIAP: boolean;
+  IAPRange: string;
+  released: string;
+  updated: number;
+  contentRating: string;
 }
 
 interface GPlayResult {
@@ -31,6 +41,15 @@ interface GPlayResult {
   price: number;
   version: string;
   icon: string;
+  description?: string;
+  histogram?: Record<number, number>;
+  recentChanges?: string;
+  adSupported?: boolean;
+  offersIAP?: boolean;
+  IAPRange?: string;
+  released?: string;
+  updated?: number;
+  contentRating?: string;
 }
 
 // ── Parser ─────────────────────────────────────────────────────────────
@@ -47,6 +66,15 @@ export function parseGooglePlayApp(raw: GPlayResult): GooglePlayAppDetail {
     price: raw.free ? 0 : raw.price,
     version: raw.version,
     iconUrl: raw.icon,
+    description: (raw.description ?? "").slice(0, 1000),
+    histogram: raw.histogram ?? {},
+    recentChanges: raw.recentChanges ?? "",
+    adSupported: raw.adSupported ?? false,
+    offersIAP: raw.offersIAP ?? false,
+    IAPRange: raw.IAPRange ?? "",
+    released: raw.released ?? "",
+    updated: raw.updated ?? 0,
+    contentRating: raw.contentRating ?? "",
   };
 }
 
@@ -141,6 +169,17 @@ export class GooglePlayDetailScraper extends BaseScraper<GooglePlayAppDetail> {
         downloadsEstimate: detail.downloadsEstimate,
         price: detail.price,
         version: detail.version,
+        rawJson: JSON.stringify({
+          description: detail.description,
+          histogram: detail.histogram,
+          recentChanges: detail.recentChanges,
+          adSupported: detail.adSupported,
+          offersIAP: detail.offersIAP,
+          IAPRange: detail.IAPRange,
+          released: detail.released,
+          updated: detail.updated,
+          contentRating: detail.contentRating,
+        }),
       });
     }
   }

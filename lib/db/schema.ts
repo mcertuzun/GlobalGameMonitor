@@ -173,9 +173,7 @@ export const trendsData = sqliteTable(
   "trends_data",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    appId: integer("app_id")
-      .notNull()
-      .references(() => apps.id),
+    appId: integer("app_id").references(() => apps.id),
     keyword: text("keyword").notNull(),
     region: text("region"),
     interestScore: real("interest_score"),

@@ -16,6 +16,15 @@ export interface AppleAppDetail {
   price: number;
   version: string;
   iconUrl: string;
+  // Enriched fields stored in rawJson
+  description: string;
+  releaseNotes: string;
+  releaseDate: string;
+  currentVersionReleaseDate: string;
+  fileSizeBytes: string;
+  languageCodesISO2A: string[];
+  contentAdvisoryRating: string;
+  screenshotCount: number;
 }
 
 interface ItunesResult {
@@ -29,6 +38,13 @@ interface ItunesResult {
   version: string;
   artworkUrl100: string;
   description?: string;
+  releaseNotes?: string;
+  releaseDate?: string;
+  currentVersionReleaseDate?: string;
+  fileSizeBytes?: string;
+  languageCodesISO2A?: string[];
+  contentAdvisoryRating?: string;
+  screenshotUrls?: string[];
 }
 
 interface ItunesLookupResponse {
@@ -56,6 +72,14 @@ export function parseItunesLookupResponse(
     price: item.price,
     version: item.version,
     iconUrl: item.artworkUrl100,
+    description: (item.description ?? "").slice(0, 1000),
+    releaseNotes: item.releaseNotes ?? "",
+    releaseDate: item.releaseDate ?? "",
+    currentVersionReleaseDate: item.currentVersionReleaseDate ?? "",
+    fileSizeBytes: item.fileSizeBytes ?? "",
+    languageCodesISO2A: item.languageCodesISO2A ?? [],
+    contentAdvisoryRating: item.contentAdvisoryRating ?? "",
+    screenshotCount: (item.screenshotUrls ?? []).length,
   };
 }
 
@@ -162,6 +186,16 @@ export class AppleAppDetailScraper extends BaseScraper<AppleAppDetail> {
         ratingCount: detail.ratingCount,
         price: detail.price,
         version: detail.version,
+        rawJson: JSON.stringify({
+          description: detail.description,
+          releaseNotes: detail.releaseNotes,
+          releaseDate: detail.releaseDate,
+          currentVersionReleaseDate: detail.currentVersionReleaseDate,
+          fileSizeBytes: detail.fileSizeBytes,
+          languageCodesISO2A: detail.languageCodesISO2A,
+          contentAdvisoryRating: detail.contentAdvisoryRating,
+          screenshotCount: detail.screenshotCount,
+        }),
       });
     }
   }
