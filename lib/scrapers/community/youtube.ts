@@ -6,6 +6,7 @@ import {
 import { apps, trendSignals } from "@/lib/db/schema";
 import { and, eq, like } from "drizzle-orm";
 import { SCRAPER_LIMITS } from "@/lib/config";
+import { getApiKey } from "@/lib/api-keys";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -93,7 +94,7 @@ export class YouTubeScraper extends BaseScraper<YouTubeSignal> {
 
   async fetch(): Promise<ScraperResult<YouTubeSignal>> {
     const errors: string[] = [];
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    const apiKey = await getApiKey("YOUTUBE_API_KEY");
 
     if (!apiKey) {
       return {
@@ -101,7 +102,7 @@ export class YouTubeScraper extends BaseScraper<YouTubeSignal> {
         fetchedAt: new Date(),
         records: [],
         errors: [
-          "YOUTUBE_API_KEY not set — skipping YouTube scraper. Get a free key from Google Cloud Console.",
+          "YOUTUBE_API_KEY not set — skipping YouTube scraper. Get a free key from Google Cloud Console or set it in Settings > API Keys.",
         ],
       };
     }

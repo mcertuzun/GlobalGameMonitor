@@ -5,6 +5,7 @@ import {
 } from "@/lib/scrapers/base-scraper";
 import { gameMetadata } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { getApiKey } from "@/lib/api-keys";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -83,6 +84,10 @@ export class RawgScraper extends BaseScraper<RawgGameParsed> {
     const allRecords: RawgGameParsed[] = [];
     const errors: string[] = [];
 
+    // Get API key (optional but recommended for higher rate limits)
+    const apiKey = await getApiKey("RAWG_API_KEY");
+    const keyParam = apiKey ? `&key=${apiKey}` : "";
+
     // Build date range for last 30 days
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -90,8 +95,8 @@ export class RawgScraper extends BaseScraper<RawgGameParsed> {
     const dateTo = now.toISOString().split("T")[0];
 
     const endpoints = [
-      `https://api.rawg.io/api/games?ordering=-added&page_size=20&dates=${dateFrom},${dateTo}`,
-      `https://api.rawg.io/api/games?ordering=-rating&page_size=20&metacritic=80,100`,
+      `https://api.rawg.io/api/games?ordering=-added&page_size=20&dates=${dateFrom},${dateTo}${keyParam}`,
+      `https://api.rawg.io/api/games?ordering=-rating&page_size=20&metacritic=80,100${keyParam}`,
     ];
 
     for (const url of endpoints) {
