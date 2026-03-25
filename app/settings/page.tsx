@@ -28,6 +28,9 @@ const SCRAPERS = [
   { name: "itchio-jams", label: "itch.io Game Jams" },
   { name: "trending-now", label: "TrendingNow.games" },
   { name: "youtube", label: "YouTube Data API" },
+  { name: "reviews", label: "App Reviews" },
+  { name: "similar-apps", label: "Similar Apps Discovery" },
+  { name: "keyword-scorer", label: "ASO Keyword Scorer" },
 ];
 
 interface ScraperRun {

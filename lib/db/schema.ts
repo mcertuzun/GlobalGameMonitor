@@ -234,6 +234,53 @@ export const trendSignals = sqliteTable(
   ]
 );
 
+// ── app_reviews ───────────────────────────────────────────────────────
+export const appReviews = sqliteTable("app_reviews", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  appId: integer("app_id").notNull().references(() => apps.id),
+  store: text("store").notNull(),
+  reviewId: text("review_id"),
+  userName: text("user_name"),
+  score: integer("score").notNull(),     // 1-5
+  title: text("title"),
+  text: text("text"),
+  thumbsUp: integer("thumbs_up"),
+  version: text("version"),
+  date: text("date").notNull(),
+  createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+}, (table) => [
+  index("idx_app_reviews_app_date").on(table.appId, table.date),
+  index("idx_app_reviews_score").on(table.score),
+]);
+
+// ── similar_apps ──────────────────────────────────────────────────────
+export const similarApps = sqliteTable("similar_apps", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  appId: integer("app_id").notNull().references(() => apps.id),
+  similarStoreId: text("similar_store_id").notNull(),
+  similarName: text("similar_name").notNull(),
+  similarDeveloper: text("similar_developer"),
+  similarScore: real("similar_score"),
+  store: text("store").notNull(),
+  discoveredAt: text("discovered_at").default(sql`(CURRENT_TIMESTAMP)`),
+}, (table) => [
+  index("idx_similar_apps_app").on(table.appId),
+  uniqueIndex("idx_similar_apps_unique").on(table.appId, table.similarStoreId),
+]);
+
+// ── keyword_scores ────────────────────────────────────────────────────
+export const keywordScores = sqliteTable("keyword_scores", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  keyword: text("keyword").notNull(),
+  store: text("store").notNull(),       // "playstore" | "appstore"
+  trafficScore: real("traffic_score"),
+  difficultyScore: real("difficulty_score"),
+  date: text("date").notNull(),
+  createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+}, (table) => [
+  index("idx_keyword_scores_keyword").on(table.keyword, table.date),
+]);
+
 // ── settings ──────────────────────────────────────────────────────────
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),

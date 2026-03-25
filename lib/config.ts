@@ -10,4 +10,11 @@ export const SCRAPER_LIMITS = {
     maxAppsToSearch: 10,
     maxResultsPerSearch: 5,
   },
+  reviews: {
+    maxAppsToFetch: 10,
+    maxReviewsPerApp: 50,
+  },
+  keywords: {
+    searchResultsPerKeyword: 20,
+  },
 };
