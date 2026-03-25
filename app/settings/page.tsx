@@ -102,6 +102,8 @@ export default function SettingsPage() {
   const [apiKeysLoading, setApiKeysLoading] = useState(true);
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});
   const [apiKeySaving, setApiKeySaving] = useState<Set<string>>(new Set());
+  const [apiKeyTesting, setApiKeyTesting] = useState<Set<string>>(new Set());
+  const [apiKeyTestResults, setApiKeyTestResults] = useState<Record<string, { ok: boolean; message: string }>>({});
   const [apiKeyFeedback, setApiKeyFeedback] = useState<Record<string, { type: "success" | "error"; message: string }>>({});
 
   const fetchStatus = useCallback(() => {
@@ -315,6 +317,47 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleTestApiKey(keyId: string) {
+    setApiKeyTesting((prev) => new Set(prev).add(keyId));
+    setApiKeyTestResults((prev) => {
+      const next = { ...prev };
+      delete next[keyId];
+      return next;
+    });
+
+    try {
+      const res = await fetch("/api/settings/api-keys/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyId }),
+      });
+      const json = await res.json();
+      setApiKeyTestResults((prev) => ({
+        ...prev,
+        [keyId]: { ok: json.ok, message: json.message },
+      }));
+    } catch {
+      setApiKeyTestResults((prev) => ({
+        ...prev,
+        [keyId]: { ok: false, message: "Network error" },
+      }));
+    } finally {
+      setApiKeyTesting((prev) => {
+        const next = new Set(prev);
+        next.delete(keyId);
+        return next;
+      });
+      // Auto-clear test result after 5 seconds
+      setTimeout(() => {
+        setApiKeyTestResults((prev) => {
+          const next = { ...prev };
+          delete next[keyId];
+          return next;
+        });
+      }, 5000);
+    }
+  }
+
   return (
     <div className="space-y-8 p-6">
       <h2 className="font-heading text-xl font-semibold">Settings</h2>
@@ -402,7 +445,29 @@ export default function SettingsPage() {
                         Clear
                       </Button>
                     )}
+                    {key.isSet && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTestApiKey(key.id)}
+                        disabled={apiKeyTesting.has(key.id) || apiKeySaving.has(key.id)}
+                      >
+                        {apiKeyTesting.has(key.id) ? "Testing..." : "Test"}
+                      </Button>
+                    )}
                   </div>
+                  {apiKeyTestResults[key.id] && (
+                    <p
+                      className={`text-xs ${
+                        apiKeyTestResults[key.id].ok
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {apiKeyTestResults[key.id].ok ? "\u2713" : "\u2717"}{" "}
+                      {apiKeyTestResults[key.id].message}
+                    </p>
+                  )}
                   {apiKeyFeedback[key.id] && (
                     <p
                       className={`text-xs ${
