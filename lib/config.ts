@@ -1,6 +1,9 @@
 export const SCRAPER_LIMITS = {
-  topChartsPerChart: 50, // Only store top 50 per chart (not 100)
-  maxTrackedApps: 500, // Max apps in DB
+  // Legacy default. Top-chart scrapers now read cfg.topN from chart_config
+  // settings; this fallback is only used by non-chart scrapers that reference
+  // the constant directly.
+  topChartsPerChart: 300,
+  maxTrackedApps: 5000, // Max apps in DB — bumped for 300×N-country discovery
   retentionDays: 30, // Keep data for 30 days
   maxSnapshotsPerApp: 30, // Max snapshots per app
   skipDuplicateSnapshots: true, // Don't insert if snapshot exists for today

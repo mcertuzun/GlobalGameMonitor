@@ -1,7 +1,7 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, topCharts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { SCRAPER_LIMITS } from "@/lib/config";
+import { getChartConfig } from "@/lib/settings/chart-config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -59,9 +59,9 @@ export function parseAppleRssResponse(
 
 // ── Scraper ────────────────────────────────────────────────────────────
 
-const COUNTRIES = ["us"];
-const CHART_TYPES = ["top-free", "top-paid", "top-grossing"];
-const LIMIT = SCRAPER_LIMITS.topChartsPerChart;
+// Apple's marketing RSS caps out at 200 entries per feed. We keep scraper-level
+// config flexible but clamp the URL call to this ceiling.
+const APPLE_RSS_MAX = 200;
 
 export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
   config: ScraperConfig = {
@@ -76,12 +76,18 @@ export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
     const allEntries: AppleChartEntry[] = [];
     const errors: string[] = [];
 
-    for (const country of COUNTRIES) {
-      for (const chartType of CHART_TYPES) {
+    const cfg = await getChartConfig();
+    const limit = Math.min(cfg.topN, APPLE_RSS_MAX);
+
+    for (const country of cfg.countries) {
+      const countryLower = country.toLowerCase();
+      for (const chartType of cfg.chartTypes) {
+        // Apple's URL uses the "top-<type>" format.
+        const urlChartType = `top-${chartType}`;
         try {
           await this.rateLimit();
 
-          const url = `https://rss.applemarketingtools.com/api/v2/${country}/apps/${chartType}/${LIMIT}/apps.json`;
+          const url = `https://rss.applemarketingtools.com/api/v2/${countryLower}/apps/${urlChartType}/${limit}/apps.json`;
           const response = await fetch(url, {
             signal: AbortSignal.timeout(this.config.timeout),
           });
@@ -92,9 +98,12 @@ export class AppleTopChartsScraper extends BaseScraper<AppleChartEntry> {
           }
 
           const data = await response.json();
-          // Map chart type from URL format to storage format
-          const normalizedChartType = chartType.replace("top-", "");
-          const entries = parseAppleRssResponse(data, country.toUpperCase(), "games", normalizedChartType);
+          const entries = parseAppleRssResponse(
+            data,
+            country.toUpperCase(),
+            cfg.category,
+            chartType
+          );
           allEntries.push(...entries);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);

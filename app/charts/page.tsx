@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChartsTable } from "@/components/tables/charts-table";
+import { RisingGamesPanel } from "@/components/charts/rising-games-panel";
 
 interface ChartEntry {
   id: number;
@@ -64,6 +65,12 @@ export default function ChartsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <RisingGamesPanel
+        store={store as "playstore" | "appstore"}
+        chartType={chartType}
+        limit={50}
+      />
 
       {loading ? (
         <p className="text-muted-foreground">Loading charts...</p>

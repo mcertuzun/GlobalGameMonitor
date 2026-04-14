@@ -1,7 +1,7 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, topCharts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { SCRAPER_LIMITS } from "@/lib/config";
+import { getChartConfig } from "@/lib/settings/chart-config";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -20,11 +20,11 @@ export interface GooglePlayChartEntry {
 
 // ── Scraper ────────────────────────────────────────────────────────────
 
-const COLLECTIONS = [
-  { id: "TOP_FREE", chartType: "free" },
-  { id: "TOP_PAID", chartType: "paid" },
-  { id: "GROSSING", chartType: "grossing" },
-];
+const CHART_TYPE_TO_COLLECTION: Record<string, string> = {
+  free: "TOP_FREE",
+  paid: "TOP_PAID",
+  grossing: "GROSSING",
+};
 
 export class GooglePlayTopChartsScraper extends BaseScraper<GooglePlayChartEntry> {
   config: ScraperConfig = {
@@ -41,40 +41,52 @@ export class GooglePlayTopChartsScraper extends BaseScraper<GooglePlayChartEntry
     const allEntries: GooglePlayChartEntry[] = [];
     const errors: string[] = [];
 
-    for (const collection of COLLECTIONS) {
-      try {
-        await this.rateLimit();
+    const cfg = await getChartConfig();
+    const playCategory =
+      cfg.category === "games" ? gplay.category.GAME : undefined;
 
-        const results = await gplay.list({
-          collection: gplay.collection[collection.id],
-          category: gplay.category.GAME,
-          num: SCRAPER_LIMITS.topChartsPerChart,
-          country: "us",
-        });
+    for (const country of cfg.countries) {
+      for (const chartType of cfg.chartTypes) {
+        const collectionId = CHART_TYPE_TO_COLLECTION[chartType];
+        if (!collectionId) {
+          errors.push(`Unknown chartType '${chartType}' — skipped`);
+          continue;
+        }
 
-        const entries: GooglePlayChartEntry[] = (results as Array<{
-          appId: string;
-          title: string;
-          developer: string;
-          icon: string;
-          genre: string;
-        }>).map((item, index) => ({
-          store: "playstore" as const,
-          country: "US",
-          category: "games",
-          chartType: collection.chartType,
-          rank: index + 1,
-          storeId: item.appId,
-          name: item.title,
-          developer: item.developer,
-          iconUrl: item.icon,
-          genre: item.genre ?? "",
-        }));
+        try {
+          await this.rateLimit();
 
-        allEntries.push(...entries);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        errors.push(`Error fetching ${collection.id}: ${msg}`);
+          const results = await gplay.list({
+            collection: gplay.collection[collectionId],
+            category: playCategory,
+            num: cfg.topN,
+            country: country.toLowerCase(),
+          });
+
+          const entries: GooglePlayChartEntry[] = (results as Array<{
+            appId: string;
+            title: string;
+            developer: string;
+            icon: string;
+            genre: string;
+          }>).map((item, index) => ({
+            store: "playstore" as const,
+            country: country.toUpperCase(),
+            category: cfg.category,
+            chartType,
+            rank: index + 1,
+            storeId: item.appId,
+            name: item.title,
+            developer: item.developer,
+            iconUrl: item.icon,
+            genre: item.genre ?? "",
+          }));
+
+          allEntries.push(...entries);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          errors.push(`Error fetching ${country}/${chartType}: ${msg}`);
+        }
       }
     }
 
