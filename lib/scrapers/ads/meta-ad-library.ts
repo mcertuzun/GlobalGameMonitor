@@ -1,7 +1,8 @@
 import { BaseScraper, ScraperConfig, ScraperResult } from "@/lib/scrapers/base-scraper";
 import { apps, adCreatives } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { getApiKey } from "@/lib/api-keys";
+import { variantGroupIdFor } from "@/lib/ads/variant-grouping";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -155,24 +156,36 @@ export class MetaAdLibraryScraper extends BaseScraper<MetaAdEntry> {
       };
     }
 
-    // Only fetch ads for our own games. The Meta Ad Library doesn't expose
-    // store-id-to-page mapping, so we match by app name.
-    const ownGames = await db
+    // Fetch ads for own games + the watchlist (top grossing / top free auto-sync).
+    // Meta Ad Library doesn't expose store-id-to-page mapping, so we match by name.
+    const targets = await db
       .select({ id: apps.id, name: apps.name, storeId: apps.storeId })
       .from(apps)
-      .where(eq(apps.isOwnGame, true))
-      .limit(50);
+      .where(or(eq(apps.isOwnGame, true), eq(apps.trackAds, true)))
+      .limit(500);
 
-    if (ownGames.length === 0) {
+    if (targets.length === 0) {
       return {
         source: this.config.name,
         fetchedAt: new Date(),
         records: [],
-        errors: ["No apps flagged with isOwnGame=true — nothing to fetch."],
+        errors: [
+          "No apps are on the watchlist — run syncWatchlist() or flag at least one app as isOwnGame=true.",
+        ],
       };
     }
 
-    for (const game of ownGames) {
+    // De-dup by normalized name: the same game often exists in both Play and
+    // App Store with identical titles. One Meta API call covers both stores.
+    const seen = new Set<string>();
+    const deduped = targets.filter((t) => {
+      const key = t.name.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    for (const game of deduped) {
       try {
         const url = new URL(META_ADS_ARCHIVE_ENDPOINT);
         url.searchParams.set("access_token", token);
@@ -261,6 +274,11 @@ export class MetaAdLibraryScraper extends BaseScraper<MetaAdEntry> {
       }
 
       const appId = matched[0].id;
+      const variantGroupId = variantGroupIdFor({
+        appId,
+        headline: entry.headline,
+        adCopy: entry.adCopy,
+      });
 
       // Dedupe on (appId, creativeUrl) — Meta's snapshot URLs are stable per ad.
       const existing = await db
@@ -290,6 +308,7 @@ export class MetaAdLibraryScraper extends BaseScraper<MetaAdEntry> {
             platforms: JSON.stringify(entry.publisherPlatforms),
             impressionsLower: entry.impressionsLower,
             impressionsUpper: entry.impressionsUpper,
+            variantGroupId,
           })
           .where(eq(adCreatives.id, existing[0].id));
         continue;
@@ -310,6 +329,7 @@ export class MetaAdLibraryScraper extends BaseScraper<MetaAdEntry> {
         platforms: JSON.stringify(entry.publisherPlatforms),
         impressionsLower: entry.impressionsLower,
         impressionsUpper: entry.impressionsUpper,
+        variantGroupId,
       });
     }
   }

@@ -20,11 +20,19 @@ export const apps = sqliteTable(
     category: text("category"),
     iconUrl: text("icon_url"),
     isOwnGame: integer("is_own_game", { mode: "boolean" }).default(false),
+    // Watchlist flag — when true, ad scrapers (Meta Ad Library etc.) will
+    // pull creatives for this app. Auto-populated from top grossing / top free
+    // charts by lib/watchlist/sync.ts.
+    trackAds: integer("track_ads", { mode: "boolean" }).default(false),
+    // Reason the app was added to the watchlist. "top-grossing" | "top-free"
+    // | "manual" | "own-game". Nullable for historical rows.
+    watchlistReason: text("watchlist_reason"),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
     updatedAt: text("updated_at").default(sql`(CURRENT_TIMESTAMP)`),
   },
   (table) => [
     uniqueIndex("apps_store_store_id_unique").on(table.store, table.storeId),
+    index("apps_track_ads_idx").on(table.trackAds),
   ]
 );
 
