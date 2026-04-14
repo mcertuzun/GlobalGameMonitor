@@ -43,6 +43,13 @@
       "when": 1774454486447,
       "tag": "0005_skinny_zzzax",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1776126682087,
+      "tag": "0006_add_investment_fields",
+      "breakpoints": true
     }
   ]
 }

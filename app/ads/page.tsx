@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdsTable } from "@/components/tables/ads-table";
+import { TopCreativeInvestments } from "@/components/ads/top-creative-investments";
 
 interface AdEntry {
   id: number;
@@ -30,11 +31,16 @@ export default function AdsPage() {
     <div className="space-y-6 p-6">
       <h2 className="font-heading text-xl font-semibold">Ad Creatives</h2>
 
-      {loading ? (
-        <p className="text-muted-foreground">Loading ads...</p>
-      ) : (
-        <AdsTable data={ads} />
-      )}
+      <TopCreativeInvestments />
+
+      <div className="space-y-3">
+        <h3 className="font-heading text-lg font-medium">All Creatives</h3>
+        {loading ? (
+          <p className="text-muted-foreground">Loading ads...</p>
+        ) : (
+          <AdsTable data={ads} />
+        )}
+      </div>
     </div>
   );
 }

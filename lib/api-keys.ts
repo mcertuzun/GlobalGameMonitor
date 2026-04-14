@@ -46,6 +46,13 @@ export const API_KEY_DEFINITIONS = [
     description: "Free from RAWG.io",
     url: "https://rawg.io/apidocs",
   },
+  {
+    id: "META_AD_LIBRARY_TOKEN",
+    label: "Meta Ad Library Token",
+    description:
+      "Graph API access token (ads_archive scope). Required for creative investment tracking.",
+    url: "https://www.facebook.com/ads/library/api/",
+  },
 ];
 
 /**

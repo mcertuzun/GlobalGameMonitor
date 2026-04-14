@@ -125,10 +125,25 @@ export const adCreatives = sqliteTable(
     firstSeen: text("first_seen"),
     lastSeen: text("last_seen"),
     isActive: integer("is_active", { mode: "boolean" }).default(true),
+    // ── investment-estimation fields ──
+    // Distinct country codes the creative has been seen in (JSON array).
+    countries: text("countries"),
+    // Distinct ad platforms a variant family has run on (JSON array).
+    platforms: text("platforms"),
+    // Group id to cluster re-uploads / localized variants of the same video.
+    variantGroupId: text("variant_group_id"),
+    // Total impressions bucket (upper bound) from Meta Ad Library when available.
+    impressionsUpper: integer("impressions_upper"),
+    // Total impressions bucket (lower bound) from Meta Ad Library when available.
+    impressionsLower: integer("impressions_lower"),
+    // Cached investment score so the API stays cheap; recomputed per run.
+    investmentScore: real("investment_score"),
     createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
   },
   (table) => [
     index("ad_creatives_app_platform_idx").on(table.appId, table.platform),
+    index("ad_creatives_variant_group_idx").on(table.variantGroupId),
+    index("ad_creatives_investment_score_idx").on(table.investmentScore),
   ]
 );
 
