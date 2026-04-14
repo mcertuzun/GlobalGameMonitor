@@ -3,6 +3,7 @@ import { apps, adCreatives } from "@/lib/db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { getApiKey } from "@/lib/api-keys";
 import { variantGroupIdFor } from "@/lib/ads/variant-grouping";
+import { fetchWithMetaBackoff } from "@/lib/scrapers/ads/meta-rate-limit";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -215,9 +216,11 @@ export class MetaAdLibraryScraper extends BaseScraper<MetaAdEntry> {
         );
         url.searchParams.set("limit", "50");
 
-        const resp = await fetch(url.toString(), {
-          signal: AbortSignal.timeout(this.config.timeout),
-        });
+        const resp = await fetchWithMetaBackoff(
+          url.toString(),
+          { signal: AbortSignal.timeout(this.config.timeout) },
+          { maxAttempts: 4 }
+        );
 
         if (!resp.ok) {
           const bodyText = await resp.text().catch(() => "");

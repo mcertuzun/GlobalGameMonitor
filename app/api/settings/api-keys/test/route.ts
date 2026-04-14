@@ -88,6 +88,35 @@ async function testApiKey(
       if (res.ok) return { ok: true, message: "RAWG API connected" };
       return { ok: false, message: `HTTP ${res.status}` };
     }
+    case "META_AD_LIBRARY_TOKEN": {
+      // debug_token verifies the token shape without burning ads_archive quota.
+      const url = new URL("https://graph.facebook.com/v20.0/debug_token");
+      url.searchParams.set("input_token", apiKey);
+      url.searchParams.set("access_token", apiKey);
+      const res = await fetch(url.toString());
+      if (!res.ok) return { ok: false, message: `HTTP ${res.status}` };
+      const json = (await res.json()) as {
+        data?: { is_valid?: boolean; type?: string; scopes?: string[] };
+        error?: { message?: string };
+      };
+      if (json.error) {
+        return { ok: false, message: json.error.message ?? "Meta error" };
+      }
+      if (!json.data?.is_valid) {
+        return { ok: false, message: "Token reported invalid by Meta" };
+      }
+      const scopes = json.data.scopes ?? [];
+      if (!scopes.includes("ads_read")) {
+        return {
+          ok: false,
+          message: `Token missing 'ads_read' scope (has: ${scopes.join(", ") || "none"})`,
+        };
+      }
+      return {
+        ok: true,
+        message: `Meta ${json.data.type ?? "token"} valid with ads_read`,
+      };
+    }
     default:
       return { ok: false, message: "Unknown key type" };
   }
