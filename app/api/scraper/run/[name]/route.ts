@@ -35,13 +35,26 @@ export async function POST(
   setTimeout(async () => {
     try {
       const result = await scraper.run();
+      // Surface non-fatal errors (e.g. "no apps on watchlist", per-item 400s)
+      // in scraper_runs.errorMessage so the Settings → Recent Runs view shows
+      // *why* a "success, 0 records" happened. Priority: fatal error, else
+      // joined non-fatal errors, else null.
+      const combinedMessage =
+        result.error ??
+        (result.errors.length > 0
+          ? result.errors.slice(0, 5).join(" | ") +
+            (result.errors.length > 5
+              ? ` (+${result.errors.length - 5} more)`
+              : "")
+          : null);
+
       await db
         .update(scraperRuns)
         .set({
           status: result.status,
           recordsFetched: result.recordsFetched,
           finishedAt: new Date().toISOString(),
-          errorMessage: result.error ?? null,
+          errorMessage: combinedMessage,
         })
         .where(eq(scraperRuns.id, runId));
     } catch (err) {
